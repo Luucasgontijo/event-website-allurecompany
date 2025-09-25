@@ -1,0 +1,79 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+.npm
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+
+# Environment files (PROTEGER INFORMAÇÕES SENSÍVEIS)
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Archives de deploy
+*.tar.gz
+*.zip
+allure-events-dist.tar.gz
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# Certificados SSL (se houver)
+*.key
+*.crt
+*.pem
+
+# Arquivos de configuração local do servidor
+setup-vps-configured.sh
+nginx.conf
+apache.conf
+
+# Backups
+backup/
+*.backup
+*.bak
+
+# Cache
+.cache/
+.parcel-cache/
