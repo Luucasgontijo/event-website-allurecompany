@@ -1,6 +1,6 @@
 import type { Event, ApiResponse } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://allure.mangoia.com.br/api';
 
 // Função auxiliar para fazer requisições
 async function apiRequest<T>(
