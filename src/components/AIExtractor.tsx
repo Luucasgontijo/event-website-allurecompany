@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { Sparkles, Upload, FileText, Loader2, X } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://allure.mangoia.com.br/api';
+
 interface AIExtractorProps {
   onExtract: (data: any) => void;
 }
@@ -21,7 +23,7 @@ export default function AIExtractor({ onExtract }: AIExtractorProps) {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch('http://localhost:3001/api/ai/extract-from-image', {
+      const response = await fetch(`${API_URL}/ai/extract-from-image`, {
         method: 'POST',
         body: formData,
       });
@@ -53,7 +55,7 @@ export default function AIExtractor({ onExtract }: AIExtractorProps) {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/ai/extract-from-text', {
+      const response = await fetch(`${API_URL}/ai/extract-from-text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
