@@ -81,4 +81,6 @@ networks:
 
 volumes:
   allure_postgres_data:
+    external: true
+    name: allure_postgres_data
 
