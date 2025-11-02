@@ -7,30 +7,20 @@ const openai = new OpenAI({
 
 export interface ExtractedEventData {
   nome?: string;
-  artista?: string;
+  local?: string;
   data?: string;
   horaInicio?: string;
-  horaTermino?: string;
+  horaFim?: string;
   status?: string;
   endereco?: string;
   descricao?: string;
-  ingressos?: {
-    setores_mesa?: Array<{
-      nome: string;
-      preco: number;
-      descricao?: string;
-    }>;
-    camarotes_premium?: Array<{
-      nome: string;
-      preco: number;
-      descricao?: string;
-    }>;
-    camarotes_empresariais?: Array<{
-      nome: string;
-      preco: number;
-      descricao?: string;
-    }>;
-  };
+  imagemUrl?: string;
+  ingressos?: Array<{
+    id: string;
+    nome: string;
+    preco: number;
+    descricao?: string;
+  }>;
 }
 
 export class AIService {
@@ -49,30 +39,28 @@ export class AIService {
             content: `Você é um assistente especializado em extrair informações de eventos de imagens.
 Analise a imagem e extraia as seguintes informações sobre o evento:
 - Nome do evento
-- Nome do artista/organizador
+- Local do evento
 - Data (formato dd-mm-yyyy)
 - Hora de início (formato HH:mm)
 - Hora de término (formato HH:mm)
 - Status (disponível, esgotado, cancelado)
 - Endereço do evento
 - Descrição
-- Ingressos (com nome, preço e descrição de cada tipo)
+- Ingressos (lista com nome, preço e descrição)
 
 Retorne APENAS um objeto JSON válido, sem markdown, sem explicações adicionais, seguindo esta estrutura:
 {
   "nome": "nome do evento",
-  "artista": "nome do artista",
+  "local": "nome do local",
   "data": "dd-mm-yyyy",
   "horaInicio": "HH:mm",
-  "horaTermino": "HH:mm",
+  "horaFim": "HH:mm",
   "status": "disponivel",
   "endereco": "endereço completo",
   "descricao": "descrição do evento",
-  "ingressos": {
-    "setores_mesa": [{"nome": "Mesa VIP", "preco": 150, "descricao": "Mesa próxima ao palco"}],
-    "camarotes_premium": [],
-    "camarotes_empresariais": []
-  }
+  "ingressos": [
+    {"id": "1", "nome": "Pista", "preco": 100, "descricao": "Ingresso comum"}
+  ]
 }
 
 Se alguma informação não estiver disponível, omita o campo ou use string vazia.
@@ -129,30 +117,28 @@ Para horários, use formato 24h (HH:mm).`
             content: `Você é um assistente especializado em extrair informações de eventos de textos.
 Analise o texto e extraia as seguintes informações sobre o evento:
 - Nome do evento
-- Nome do artista/organizador
+- Local do evento
 - Data (formato dd-mm-yyyy)
 - Hora de início (formato HH:mm)
 - Hora de término (formato HH:mm)
 - Status (disponível, esgotado, cancelado)
 - Endereço do evento
 - Descrição
-- Ingressos (com nome, preço e descrição de cada tipo)
+- Ingressos (lista com nome, preço e descrição)
 
 Retorne APENAS um objeto JSON válido, sem markdown, sem explicações adicionais, seguindo esta estrutura:
 {
   "nome": "nome do evento",
-  "artista": "nome do artista",
+  "local": "nome do local",
   "data": "dd-mm-yyyy",
   "horaInicio": "HH:mm",
-  "horaTermino": "HH:mm",
+  "horaFim": "HH:mm",
   "status": "disponivel",
   "endereco": "endereço completo",
   "descricao": "descrição do evento",
-  "ingressos": {
-    "setores_mesa": [{"nome": "Mesa VIP", "preco": 150, "descricao": "Mesa próxima ao palco"}],
-    "camarotes_premium": [],
-    "camarotes_empresariais": []
-  }
+  "ingressos": [
+    {"id": "1", "nome": "Pista", "preco": 100, "descricao": "Ingresso comum"}
+  ]
 }
 
 Se alguma informação não estiver disponível, omita o campo ou use string vazia.
@@ -189,4 +175,3 @@ Para horários, use formato 24h (HH:mm).`
 }
 
 export default new AIService();
-

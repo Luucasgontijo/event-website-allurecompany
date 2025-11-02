@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: allure_user
+      POSTGRES_PASSWORD: allure123456
+      POSTGRES_DB: allure_events
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - allure-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: allure_user
+      POSTGRES_PASSWORD: allure123456
+      POSTGRES_DB: allure_events
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      PORT: 3001
+      NODE_ENV: development
+      FRONTEND_URL: http://localhost:5173
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-proj-SUA_CHAVE_AQUI}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - allure-network
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3001/api
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - allure-network
+
+networks:
+  allure-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

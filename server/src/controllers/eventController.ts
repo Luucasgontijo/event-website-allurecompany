@@ -9,10 +9,10 @@ export class EventController {
       const eventData: CreateEventDTO = req.body;
 
       // Validação básica
-      if (!eventData.nome || !eventData.artista || !eventData.data || !eventData.horaInicio) {
+      if (!eventData.nome) {
         return res.status(400).json({
           success: false,
-          error: 'Campos obrigatórios faltando: nome, artista, data, horaInicio'
+          error: 'Campo obrigatório faltando: nome'
         } as ApiResponse);
       }
 
