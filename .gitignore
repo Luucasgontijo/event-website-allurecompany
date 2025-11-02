@@ -99,5 +99,6 @@ postgres_data/
 
 # Backups de banco de dados
 *.sql
+!server/src/db/schema.sql
 *.dump
 backup*.sql
