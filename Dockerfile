@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# ARG para receber a URL da API
+ARG VITE_API_URL=http://localhost:3001/api
+
 # Copiar package files
 COPY package*.json ./
 
@@ -12,7 +15,8 @@ RUN npm install
 # Copiar código fonte
 COPY . .
 
-# Build de produção
+# Build de produção com a variável de ambiente
+ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # Stage de produção com nginx
