@@ -37,6 +37,7 @@ services:
     deploy:
       labels:
         - traefik.enable=true
+        - traefik.docker.network=legacy-server
         - traefik.http.routers.allure-api.rule=Host(`allure.mangoia.com.br`) && PathPrefix(`/api`)
         - traefik.http.routers.allure-api.entrypoints=websecure
         - traefik.http.routers.allure-api.priority=2
@@ -61,6 +62,7 @@ services:
     deploy:
       labels:
         - traefik.enable=true
+        - traefik.docker.network=legacy-server
         - traefik.http.routers.allure-frontend.rule=Host(`allure.mangoia.com.br`)
         - traefik.http.routers.allure-frontend.entrypoints=websecure
         - traefik.http.routers.allure-frontend.priority=1
