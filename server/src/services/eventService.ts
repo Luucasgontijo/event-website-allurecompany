@@ -6,53 +6,48 @@ export class EventService {
   async createEvent(eventData: CreateEventDTO): Promise<Event> {
     const {
       nome,
-      artista,
       data,
       horaInicio,
-      horaTermino,
-      fusoHorario,
-      status,
-      statusPersonalizado,
+      horaFim,
+      local,
       endereco,
       descricao,
+      imagemUrl,
       ingressos,
-      usuario
+      status
     } = eventData;
 
     const query = `
       INSERT INTO events (
-        nome, artista, data, hora_inicio, hora_termino, fuso_horario,
-        status, status_personalizado, endereco, descricao, ingressos, usuario
+        nome, data, hora_inicio, hora_fim, local,
+        endereco, descricao, imagem_url, ingressos, status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
 
     const values = [
       nome,
-      artista,
-      data,
-      horaInicio,
-      horaTermino || '',
-      fusoHorario,
-      status,
-      statusPersonalizado || null,
-      endereco || '',
-      descricao || '',
-      JSON.stringify(ingressos),
-      usuario || 'Sistema'
+      data || null,
+      horaInicio || null,
+      horaFim || null,
+      local || null,
+      endereco || null,
+      descricao || null,
+      imagemUrl || null,
+      JSON.stringify(ingressos || []),
+      status || 'disponivel'
     ];
 
     const result = await pool.query(query, values);
     return this.mapRowToEvent(result.rows[0]);
   }
 
-  // Listar todos os eventos ativos
+  // Listar todos os eventos
   async getAllEvents(): Promise<Event[]> {
     const query = `
       SELECT * FROM events
-      WHERE ativo = true
-      ORDER BY data_cadastro DESC
+      ORDER BY created_at DESC
     `;
 
     const result = await pool.query(query);
@@ -63,7 +58,7 @@ export class EventService {
   async getEventById(id: number): Promise<Event | null> {
     const query = `
       SELECT * FROM events
-      WHERE id = $1 AND ativo = true
+      WHERE id = $1
     `;
 
     const result = await pool.query(query, [id]);
@@ -92,10 +87,6 @@ export class EventService {
       updates.push(`nome = $${paramIndex++}`);
       values.push(eventData.nome);
     }
-    if (eventData.artista !== undefined) {
-      updates.push(`artista = $${paramIndex++}`);
-      values.push(eventData.artista);
-    }
     if (eventData.data !== undefined) {
       updates.push(`data = $${paramIndex++}`);
       values.push(eventData.data);
@@ -104,21 +95,13 @@ export class EventService {
       updates.push(`hora_inicio = $${paramIndex++}`);
       values.push(eventData.horaInicio);
     }
-    if (eventData.horaTermino !== undefined) {
-      updates.push(`hora_termino = $${paramIndex++}`);
-      values.push(eventData.horaTermino);
+    if (eventData.horaFim !== undefined) {
+      updates.push(`hora_fim = $${paramIndex++}`);
+      values.push(eventData.horaFim);
     }
-    if (eventData.fusoHorario !== undefined) {
-      updates.push(`fuso_horario = $${paramIndex++}`);
-      values.push(eventData.fusoHorario);
-    }
-    if (eventData.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(eventData.status);
-    }
-    if (eventData.statusPersonalizado !== undefined) {
-      updates.push(`status_personalizado = $${paramIndex++}`);
-      values.push(eventData.statusPersonalizado);
+    if (eventData.local !== undefined) {
+      updates.push(`local = $${paramIndex++}`);
+      values.push(eventData.local);
     }
     if (eventData.endereco !== undefined) {
       updates.push(`endereco = $${paramIndex++}`);
@@ -128,9 +111,17 @@ export class EventService {
       updates.push(`descricao = $${paramIndex++}`);
       values.push(eventData.descricao);
     }
+    if (eventData.imagemUrl !== undefined) {
+      updates.push(`imagem_url = $${paramIndex++}`);
+      values.push(eventData.imagemUrl);
+    }
     if (eventData.ingressos !== undefined) {
       updates.push(`ingressos = $${paramIndex++}`);
       values.push(JSON.stringify(eventData.ingressos));
+    }
+    if (eventData.status !== undefined) {
+      updates.push(`status = $${paramIndex++}`);
+      values.push(eventData.status);
     }
 
     if (updates.length === 0) {
@@ -143,7 +134,7 @@ export class EventService {
     const query = `
       UPDATE events
       SET ${updates.join(', ')}
-      WHERE id = $${paramIndex} AND ativo = true
+      WHERE id = $${paramIndex}
       RETURNING *
     `;
 
@@ -151,12 +142,11 @@ export class EventService {
     return this.mapRowToEvent(result.rows[0]);
   }
 
-  // Deletar evento (soft delete)
+  // Deletar evento (hard delete)
   async deleteEvent(id: number): Promise<boolean> {
     const query = `
-      UPDATE events
-      SET ativo = false
-      WHERE id = $1 AND ativo = true
+      DELETE FROM events
+      WHERE id = $1
       RETURNING id
     `;
 
@@ -168,7 +158,7 @@ export class EventService {
   async getEventsByDate(date: string): Promise<Event[]> {
     const query = `
       SELECT * FROM events
-      WHERE data = $1 AND ativo = true
+      WHERE data = $1
       ORDER BY hora_inicio ASC
     `;
 
@@ -180,8 +170,8 @@ export class EventService {
   async getEventsByStatus(status: string): Promise<Event[]> {
     const query = `
       SELECT * FROM events
-      WHERE status = $1 AND ativo = true
-      ORDER BY data_cadastro DESC
+      WHERE status = $1
+      ORDER BY created_at DESC
     `;
 
     const result = await pool.query(query, [status]);
@@ -193,25 +183,21 @@ export class EventService {
     return {
       id: row.id,
       nome: row.nome,
-      artista: row.artista,
       data: row.data,
       horaInicio: row.hora_inicio,
-      horaTermino: row.hora_termino,
-      fusoHorario: row.fuso_horario,
-      status: row.status,
-      statusPersonalizado: row.status_personalizado,
+      horaFim: row.hora_fim,
+      local: row.local,
       endereco: row.endereco,
       descricao: row.descricao,
+      imagemUrl: row.imagem_url,
       ingressos: typeof row.ingressos === 'string' 
         ? JSON.parse(row.ingressos) 
         : row.ingressos,
-      dataCadastro: row.data_cadastro,
-      dataAtualizacao: row.data_atualizacao,
-      usuario: row.usuario,
-      ativo: row.ativo
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     };
   }
 }
 
 export default new EventService();
-

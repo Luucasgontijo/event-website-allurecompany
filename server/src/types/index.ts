@@ -5,45 +5,33 @@ export interface Ticket {
   descricao?: string;
 }
 
-export interface IngressosStructure {
-  setores_mesa?: Ticket[];
-  camarotes_premium?: Ticket[];
-  camarotes_empresariais?: Ticket[];
-  [key: string]: Ticket[] | undefined;
-}
-
 export interface Event {
   id?: number;
   nome: string;
-  artista: string;
-  data: string;
-  horaInicio: string;
-  horaTermino?: string;
-  fusoHorario: string;
-  status: string;
-  statusPersonalizado?: string;
+  data?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  local?: string;
   endereco?: string;
   descricao?: string;
-  ingressos: IngressosStructure;
-  dataCadastro?: string;
-  dataAtualizacao?: string;
-  usuario?: string;
-  ativo?: boolean;
+  imagemUrl?: string;
+  ingressos?: Ticket[];
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateEventDTO {
   nome: string;
-  artista: string;
-  data: string;
-  horaInicio: string;
-  horaTermino?: string;
-  fusoHorario: string;
-  status: string;
-  statusPersonalizado?: string;
+  data?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  local?: string;
   endereco?: string;
   descricao?: string;
-  ingressos: IngressosStructure;
-  usuario?: string;
+  imagemUrl?: string;
+  ingressos?: Ticket[];
+  status?: string;
 }
 
 export interface UpdateEventDTO extends Partial<CreateEventDTO> {
@@ -56,4 +44,3 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
 }
-
