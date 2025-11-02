@@ -2,6 +2,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
+    container_name: allure-events-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-allure_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
@@ -10,20 +11,18 @@ services:
       - allure_postgres_data:/var/lib/postgresql/data
       - ./server/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
-      - legacy-server
+      - allure-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-allure_user} -d ${POSTGRES_DB:-allure_events}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    deploy:
-      mode: replicated
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+    restart: unless-stopped
 
   # Backend API
   backend:
+    image: allure-events-backend:latest
+    container_name: allure-events-backend
     build:
       context: ./server
       dockerfile: Dockerfile
@@ -38,8 +37,10 @@ services:
       FRONTEND_URL: https://allure.mangoia.com.br
       OPENAI_API_KEY: ${OPENAI_API_KEY:-your-api-key-here}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
+      - allure-network
       - legacy-server
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
@@ -47,23 +48,21 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    deploy:
-      mode: replicated
-      replicas: 1
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.allure-api.rule=Host(`allure.mangoia.com.br`) && PathPrefix(`/api`)
-        - traefik.http.routers.allure-api.entrypoints=websecure
-        - traefik.http.routers.allure-api.priority=2
-        - traefik.http.routers.allure-api.tls.certresolver=letsencryptresolver
-        - traefik.http.routers.allure-api.service=allure-api
-        - traefik.http.services.allure-api.loadbalancer.server.port=3001
-        - traefik.http.services.allure-api.loadbalancer.passHostHeader=true
-      restart_policy:
-        condition: on-failure
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.allure-api.rule=Host(`allure.mangoia.com.br`) && PathPrefix(`/api`)
+      - traefik.http.routers.allure-api.entrypoints=websecure
+      - traefik.http.routers.allure-api.priority=2
+      - traefik.http.routers.allure-api.tls.certresolver=letsencryptresolver
+      - traefik.http.routers.allure-api.service=allure-api
+      - traefik.http.services.allure-api.loadbalancer.server.port=3001
+      - traefik.http.services.allure-api.loadbalancer.passHostHeader=true
+    restart: unless-stopped
 
   # Frontend
   frontend:
+    image: allure-events-frontend:latest
+    container_name: allure-events-frontend
     build:
       context: .
       dockerfile: Dockerfile
@@ -72,34 +71,31 @@ services:
     depends_on:
       - backend
     networks:
+      - allure-network
       - legacy-server
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
       timeout: 5s
       retries: 3
-    deploy:
-      mode: replicated
-      replicas: 1
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.allure-frontend.rule=Host(`allure.mangoia.com.br`)
-        - traefik.http.routers.allure-frontend.entrypoints=websecure
-        - traefik.http.routers.allure-frontend.priority=1
-        - traefik.http.routers.allure-frontend.tls.certresolver=letsencryptresolver
-        - traefik.http.routers.allure-frontend.service=allure-frontend
-        - traefik.http.services.allure-frontend.loadbalancer.server.port=80
-        - traefik.http.services.allure-frontend.loadbalancer.passHostHeader=true
-      restart_policy:
-        condition: on-failure
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.allure-frontend.rule=Host(`allure.mangoia.com.br`)
+      - traefik.http.routers.allure-frontend.entrypoints=websecure
+      - traefik.http.routers.allure-frontend.priority=1
+      - traefik.http.routers.allure-frontend.tls.certresolver=letsencryptresolver
+      - traefik.http.routers.allure-frontend.service=allure-frontend
+      - traefik.http.services.allure-frontend.loadbalancer.server.port=80
+      - traefik.http.services.allure-frontend.loadbalancer.passHostHeader=true
+    restart: unless-stopped
 
 networks:
+  allure-network:
+    driver: bridge
   legacy-server:
     external: true
     name: legacy-server
 
 volumes:
   allure_postgres_data:
-    external: true
-    name: allure_postgres_data
 
