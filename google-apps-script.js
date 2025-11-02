@@ -4,8 +4,8 @@
  */
 
 // ID da planilha (pegar da URL do Google Sheets)
-const SHEET_ID = 'SEU_SHEET_ID_AQUI'; // Substituir pelo ID real
-const SHEET_NAME = 'Planilha1'; // ou 'Sheet1' - verificar nome da aba na planilha
+const SHEET_ID = '13eLsjnroLiwKxVzZpxYLJ6_4_I0d2upCMRE1m4NqDH8'; // Substituir pelo ID real
+const SHEET_NAME = 'eventos'; // ou 'Sheet1' - verificar nome da aba na planilha
 
 // Verificação de configuração
 function verificarConfiguracao() {
@@ -64,10 +64,7 @@ function doPost(e) {
         message: 'Evento cadastrado com sucesso!',
         rowId: result.rowId
       }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader('Access-Control-Allow-Origin', '*')
-      .setHeader('Access-Control-Allow-Methods', 'POST')
-      .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
     console.error('Erro ao processar dados:', error);
@@ -79,8 +76,7 @@ function doPost(e) {
         message: 'Erro interno do servidor',
         error: error.toString()
       }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader('Access-Control-Allow-Origin', '*');
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
@@ -90,10 +86,7 @@ function doPost(e) {
 function doOptions(e) {
   return ContentService
     .createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**

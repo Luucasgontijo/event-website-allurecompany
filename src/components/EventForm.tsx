@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Plus, Trash2, Eye, Save, MapPin, Calendar, FileText } from 'lucide-react';
-import type { EventFormData, Ticket, IngressosStructure } from '../types';
+import AIExtractor from './AIExtractor';
+import type { EventFormData, Ticket, IngressosStructure, Event } from '../types';
 
 interface EventFormProps {
   onPreview: (data: EventFormData) => void;
   onSubmit: (data: EventFormData) => void;
   isSubmitting?: boolean;
+  initialData?: Event | null;
+  isEditing?: boolean;
 }
 
 const DEFAULT_ADDRESS = 'Rodovia Arquiteto Helder Cândia, nº 2044 - Ribeirão do Lipa - Cuiabá- MT / Buffet Leila Malouf LTDA';
@@ -24,7 +27,13 @@ const EVENT_STATUSES = [
   { value: 'personalizado', label: 'Status Personalizado' },
 ];
 
-export default function EventForm({ onPreview, onSubmit, isSubmitting = false }: EventFormProps) {
+export default function EventForm({ 
+  onPreview, 
+  onSubmit, 
+  isSubmitting = false,
+  initialData = null,
+  isEditing = false
+}: EventFormProps) {
   const [showCustomStatus, setShowCustomStatus] = useState(false);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [ingressos, setIngressos] = useState<IngressosStructure>({
@@ -37,6 +46,7 @@ export default function EventForm({ onPreview, onSubmit, isSubmitting = false }:
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors }
   } = useForm<EventFormData>({
     defaultValues: {
@@ -57,6 +67,77 @@ export default function EventForm({ onPreview, onSubmit, isSubmitting = false }:
       }
     }
   });
+
+  // Carregar dados iniciais quando em modo de edição
+  useEffect(() => {
+    if (initialData && isEditing) {
+      // Converter data de dd-mm-yyyy para yyyy-mm-dd (formato do input date)
+      const convertDateToInput = (dateStr: string): string => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          return `${year}-${month}-${day}`;
+        }
+        return dateStr;
+      };
+
+      reset({
+        nome: initialData.nome || '',
+        artista: initialData.artista || '',
+        data: convertDateToInput(initialData.data),
+        horaInicio: initialData.horaInicio || '',
+        horaTermino: initialData.horaTermino || '',
+        fusoHorario: initialData.fusoHorario || 'GMT-4',
+        status: initialData.status || '',
+        statusPersonalizado: initialData.statusPersonalizado || '',
+        endereco: initialData.endereco || DEFAULT_ADDRESS,
+        descricao: initialData.descricao || '',
+        ingressos: initialData.ingressos || {}
+      });
+
+      setIngressos(initialData.ingressos || {
+        setores_mesa: [],
+        camarotes_premium: [],
+        camarotes_empresariais: [],
+      });
+
+      setShowCustomStatus(initialData.status === 'personalizado');
+
+      // Identificar categorias personalizadas
+      const defaultKeys = ['setores_mesa', 'camarotes_premium', 'camarotes_empresariais'];
+      const customKeys = Object.keys(initialData.ingressos || {}).filter(
+        key => !defaultKeys.includes(key)
+      );
+      setCustomCategories(customKeys);
+    } else if (!isEditing) {
+      // Reset para valores padrão quando não estiver editando
+      reset({
+        nome: '',
+        artista: '',
+        data: '',
+        horaInicio: '',
+        horaTermino: '',
+        fusoHorario: 'GMT-4',
+        status: '',
+        statusPersonalizado: '',
+        endereco: DEFAULT_ADDRESS,
+        descricao: '',
+        ingressos: {
+          setores_mesa: [],
+          camarotes_premium: [],
+          camarotes_empresariais: [],
+        }
+      });
+      setIngressos({
+        setores_mesa: [],
+        camarotes_premium: [],
+        camarotes_empresariais: [],
+      });
+      setShowCustomStatus(false);
+      setCustomCategories([]);
+    }
+  }, [initialData, isEditing, reset]);
 
 
 
@@ -149,8 +230,71 @@ export default function EventForm({ onPreview, onSubmit, isSubmitting = false }:
     return [...defaultCategories, ...customCategoriesFormatted];
   };
 
+  // Função para preencher formulário com dados da IA
+  const handleAIExtract = (aiData: any) => {
+    console.log('Dados extraídos pela IA:', aiData);
+
+    // Converter data se necessário (dd-mm-yyyy para yyyy-mm-dd)
+    const convertDate = (dateStr: string): string => {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const [day, month, year] = parts;
+        return `${year}-${month}-${day}`;
+      }
+      return dateStr;
+    };
+
+    // Preencher campos do formulário
+    if (aiData.nome) setValue('nome', aiData.nome);
+    if (aiData.artista) setValue('artista', aiData.artista);
+    if (aiData.data) setValue('data', convertDate(aiData.data));
+    if (aiData.horaInicio) setValue('horaInicio', aiData.horaInicio);
+    if (aiData.horaTermino) setValue('horaTermino', aiData.horaTermino);
+    if (aiData.status) {
+      setValue('status', aiData.status);
+      setShowCustomStatus(aiData.status === 'personalizado');
+    }
+    if (aiData.endereco) setValue('endereco', aiData.endereco);
+    if (aiData.descricao) setValue('descricao', aiData.descricao);
+
+    // Preencher ingressos se houver
+    if (aiData.ingressos) {
+      const newIngressos: IngressosStructure = {
+        setores_mesa: [],
+        camarotes_premium: [],
+        camarotes_empresariais: [],
+      };
+
+      // Processar cada categoria
+      Object.keys(aiData.ingressos).forEach((categoria) => {
+        const tickets = aiData.ingressos[categoria];
+        if (Array.isArray(tickets) && tickets.length > 0) {
+          newIngressos[categoria] = tickets.map((ticket: any, index: number) => ({
+            id: `ai-${Date.now()}-${index}`,
+            nome: ticket.nome || '',
+            preco: parseFloat(ticket.preco) || 0,
+            descricao: ticket.descricao || '',
+          }));
+        }
+      });
+
+      setIngressos(newIngressos);
+    }
+
+    // Mostrar notificação de sucesso
+    alert('✨ Formulário preenchido automaticamente pela IA! Revise os dados antes de salvar.');
+  };
+
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+      {/* Botão IA - apenas para novos eventos */}
+      {!isEditing && (
+        <div className="flex justify-center pb-6 border-b border-stone-200">
+          <AIExtractor onExtract={handleAIExtract} />
+        </div>
+      )}
+
       {/* Informações do Evento */}
       <section>
         <h2 className="text-xl font-semibold text-allure-brown mb-6 flex items-center">
@@ -456,12 +600,12 @@ export default function EventForm({ onPreview, onSubmit, isSubmitting = false }:
           {isSubmitting ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span>Cadastrando...</span>
+              <span>{isEditing ? 'Salvando...' : 'Cadastrando...'}</span>
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              <span>Cadastrar Evento</span>
+              <span>{isEditing ? 'Salvar Alterações' : 'Cadastrar Evento'}</span>
             </>
           )}
         </button>

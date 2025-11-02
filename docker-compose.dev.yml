@@ -1,0 +1,33 @@
+# Docker Compose para Desenvolvimento
+# Uso: docker-compose -f docker-compose.dev.yml up
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: allure-events-db-dev
+    environment:
+      POSTGRES_USER: allure_user
+      POSTGRES_PASSWORD: allure_password_2024
+      POSTGRES_DB: allure_events
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./server/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - allure-network-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U allure_user -d allure_events"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_dev:
+    driver: local
+
+networks:
+  allure-network-dev:
+    driver: bridge
+

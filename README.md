@@ -1,276 +1,197 @@
-# 🎵 Allure Events - Sistema de Administração
+# 🎵 Allure Events - Sistema de Gerenciamento de Eventos
 
-Sistema de administração web para gerenciamento de eventos do Allure Music Hall, com nova estrutura JSON de ingressos organizados por categoria e integração completa com Google Sheets.
-
-## ✨ Funcionalidades Principais
-
-- **📝 Formulário Inteligente**: Interface moderna para cadastro de eventos
-- **🎫 Sistema de Ingressos JSON**: Estrutura organizada por categorias (setores, camarotes, personalizados)  
-- **📊 Integração Google Sheets**: Armazenamento automático com JSON + texto legível
-- **👁️ Prévia Avançada**: Visualização completa antes do envio
-- **📱 Interface Responsiva**: Adaptada para desktop e mobile
-- **🔐 Autenticação Segura**: Sistema de login protegido
-- **🌐 Deploy Automatizado**: Scripts para produção via Git
-
-## 🏗️ Arquitetura Técnica
-
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS com tema personalizado Allure
-- **Forms**: React Hook Form com validação avançada
-- **Icons**: Lucide React
-- **Backend**: Google Apps Script otimizado
-- **Database**: Google Sheets com estrutura JSON
+Sistema completo de gerenciamento de eventos com PostgreSQL, Docker e IA integrada (GPT-4o).
 
 ## 🚀 Início Rápido
 
-### 1. Clone e Configure
+### Com Docker (Recomendado)
+
 ```bash
-git clone https://github.com/seu-usuario/allure-events-react.git
+# 1. Clonar e configurar
+git clone <seu-repo>
 cd allure-events-react
+cp .env.docker.example .env
+
+# 2. Adicionar sua chave OpenAI no .env
+nano .env
+
+# 3. Iniciar
+docker-compose up -d
+
+# 4. Acessar http://localhost
+```
+
+### Desenvolvimento Local
+
+```bash
+# 1. Instalar dependências
 npm install
+cd server && npm install && cd ..
+
+# 2. Configurar ambiente
+cp .env.example .env
+cp server/.env.example server/.env
+nano server/.env  # Configurar credenciais
+
+# 3. Iniciar PostgreSQL
+docker-compose -f docker-compose.dev.yml up -d
+
+# 4. Iniciar sistema
+npm run dev  # Frontend em http://localhost:5173
+cd server && npm run dev  # Backend em http://localhost:3001
 ```
 
-### 2. Configurar Ambiente
+## ⚠️ Configuração de Segurança
+
+**IMPORTANTE:** Antes de usar em produção:
+
+1. ✅ Copie `.env.example` para `.env` e preencha com suas credenciais
+2. ✅ Copie `server/.env.example` para `server/.env`
+3. ✅ Troque **todas** as senhas padrão
+4. ✅ Configure sua `OPENAI_API_KEY` (obtenha em: https://platform.openai.com/api-keys)
+5. ✅ Rode `./check-security.sh` antes de commitar para Git público
+
+### Login Padrão
+- **Email**: `admin@allure.com`
+- **Senha**: `admin123`
+
+⚠️ **Troque em produção!**
+
+## ✨ Funcionalidades
+
+- ✅ CRUD completo de eventos
+- 📋 Sistema de ingressos com categorias personalizáveis
+- 📁 Sidebar com lista de eventos em tempo real
+- ✏️ Edição de eventos
+- 🗑️ Exclusão com soft delete
+- 🔍 Busca e filtro
+- 🤖 **IA integrada** para preenchimento automático (GPT-4o)
+  - 📷 Envie foto de flyer/convite
+  - 📝 Cole texto do evento
+  - ✨ IA preenche os campos automaticamente
+- 🐳 Docker pronto para produção
+- 🔒 Autenticação básica
+
+## 🏗️ Arquitetura
+
+```
+Frontend (React + Vite)  →  Backend (Node.js + Express)  →  PostgreSQL
+         :80                        :3001                      :5432
+```
+
+## 📡 API Endpoints
+
+### Eventos
+- `POST /api/events` - Criar evento
+- `GET /api/events` - Listar todos
+- `GET /api/events/:id` - Buscar por ID
+- `PUT /api/events/:id` - Atualizar
+- `DELETE /api/events/:id` - Deletar
+
+### IA (Requer OpenAI API Key)
+- `POST /api/ai/extract-from-image` - Extrair de imagem (multipart/form-data)
+- `POST /api/ai/extract-from-text` - Extrair de texto
+
+## 🛠️ Tecnologias
+
+**Frontend:** React 19, TypeScript, TailwindCSS, Vite  
+**Backend:** Node.js 20, Express, TypeScript  
+**Banco:** PostgreSQL 15  
+**IA:** OpenAI GPT-4o  
+**DevOps:** Docker, Nginx
+
+## 🐳 Comandos Docker
+
 ```bash
-cp .env.example .env.local
+# Iniciar
+docker-compose up -d
+
+# Parar
+docker-compose down
+
+# Ver logs
+docker-compose logs -f
+
+# Rebuild
+docker-compose build --no-cache
+docker-compose up -d
 ```
 
-Edite `.env.local`:
-```env
-# Google Apps Script
-VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/SEU_SCRIPT_ID/exec
+## 🔧 Desenvolvimento
 
-# Configurações
-VITE_APP_TITLE=Allure Events Admin
-VITE_APP_VERSION=1.0.0
-```
-
-### 3. Executar Desenvolvimento
 ```bash
-npm run dev
-```
-
-## 📊 Nova Estrutura de Ingressos
-
-### Formato JSON Organizado
-```json
-{
-  "setores_mesa": [
-    {
-      "id": "1",
-      "nome": "Mesa VIP",
-      "preco": 150.00,
-      "descricao": "Mesa para 4 pessoas"
-    }
-  ],
-  "camarotes_premium": [...],
-  "camarotes_empresariais": [...],
-  "categoria_personalizada": [...]
-}
-```
-
-### Benefícios
-- ✅ **Organização por categoria**
-- ✅ **Estrutura escalável** 
-- ✅ **Fácil processamento**
-- ✅ **Formato dd-mm-aaaa**
-- ✅ **Horário 24h padrão**
-
-## 🌐 Deploy em Produção
-
-### Opção 1: Deploy Automático via Git
-```bash
-# No servidor
-wget https://raw.githubusercontent.com/SEU_USUARIO/allure-events-react/main/deploy-git.sh
-chmod +x deploy-git.sh
-./deploy-git.sh
-```
-
-### Opção 2: Setup Manual Completo
-```bash
-# No servidor
-wget https://raw.githubusercontent.com/SEU_USUARIO/allure-events-react/main/setup-vps.sh
-chmod +x setup-vps.sh
-# Editar variáveis no script
-./setup-vps.sh
-```
-
-### Opção 3: Deploy Manual
-```bash
-npm run build
-scp -r dist/* root@31.97.40.181:/var/www/allure-events/
-```
-
-## ⚙️ Configuração Google Sheets
-
-### 1. Planilha (Cabeçalhos A1:J1)
-```
-ID do Evento | Nome do Evento | Artista/Organizador | Data e Horário | Status | Endereço | Descrição | INGRESSOS (JSON) | DATA DE CADASTRO | USUÁRIO
-```
-
-### 2. Google Apps Script
-1. **Copie** o código de `google-apps-script.js`
-2. **Configure**:
-   ```javascript
-   const SHEET_ID = 'SEU_ID_DA_PLANILHA';
-   const SHEET_NAME = 'Planilha1';
-   ```
-3. **Deploy** como aplicativo web
-4. **Copie** a URL gerada
-
-📖 **Documentação detalhada**: `GOOGLE_APPS_SCRIPT_SETUP.md`
-
-## 🔑 Credenciais de Acesso
-
-### Administrador Principal
-- **E-mail**: `Allure@mangoia.com.br`
-- **Senha**: `AllureMusic2025!`
-
-### Gerente
-- **E-mail**: `gerente@allure.com.br`
-- **Senha**: `AllureGerente2025!`
-
-## 📁 Estrutura do Projeto
-
-```
-allure-events-react/
-├── 📂 src/
-│   ├── 📂 components/
-│   │   ├── 🎯 EventForm.tsx          # Formulário principal (NOVO)
-│   │   ├── 👁️ PreviewModal.tsx        # Modal prévia (ATUALIZADO)
-│   │   ├── 🏠 Dashboard.tsx          # Painel principal
-│   │   └── 🎉 SuccessModal.tsx       # Modal sucesso
-│   ├── 📂 contexts/
-│   │   └── 🔐 AuthContext.tsx        # Autenticação
-│   ├── 📂 types/
-│   │   └── 📝 index.ts               # Tipos TypeScript (NOVO)
-│   ├── 📂 utils/
-│   │   └── 📊 googleSheets.ts        # Integração API (ATUALIZADO)
-│   └── 📂 assets/                    # Imagens e arquivos
-├── 📋 .env.example                   # Exemplo variáveis
-├── 🚀 deploy-git.sh                  # Deploy automatizado (NOVO)
-├── ⚙️ setup-vps.sh                   # Setup servidor (NOVO)
-├── 📖 DEPLOY_GUIDE.md               # Guia deploy completo
-└── 📋 GOOGLE_APPS_SCRIPT_SETUP.md   # Guia Google Sheets
-```
-
-## 🔧 Scripts e Comandos
-
-### Desenvolvimento
-```bash
-npm run dev          # Servidor desenvolvimento
+# Frontend
+npm run dev          # Dev server
 npm run build        # Build produção
-npm run preview      # Preview build local
-npm run lint         # Verificar código
+
+# Backend
+cd server
+npm run dev          # Dev com hot reload
+npm run build        # Build TypeScript
 ```
 
-### Produção
+## 🔒 Segurança para Git Público
+
+Antes de fazer push para repositório público:
+
 ```bash
-./deploy-git.sh      # Deploy automático via Git
-./setup-vps.sh       # Configurar servidor inicial
+# Verificar segurança
+./check-security.sh
+
+# Se tudo OK:
+git add .
+git commit -m "sua mensagem"
+git push
 ```
 
-## 🔒 Segurança e Ambiente
+**Arquivos protegidos pelo `.gitignore`:**
+- `.env`, `server/.env`
+- `*.key`, `*.pem`
+- `*.sql`, `*.dump`
+- `postgres_data/`
 
-### Variáveis Protegidas
-- ✅ `.env*` no `.gitignore`
-- ✅ Configurações sensíveis via ENV
-- ✅ Scripts de deploy seguros
-- ✅ Exemplo de configuração limpo
+## 📝 Variáveis de Ambiente
 
-### Arquivos Protegidos
-```bash
-.env.local          # Desenvolvimento
-.env.production     # Produção  
-*.tar.gz           # Arquivos deploy
-*.key              # Certificados SSL
+### Frontend (`.env`)
+```env
+VITE_API_URL=http://localhost:3001/api
+VITE_ENV=development
 ```
 
-## 📊 Monitoramento e Logs
-
-### Logs do Sistema
-```bash
-# Nginx
-sudo tail -f /var/log/nginx/access.log
-sudo tail -f /var/log/nginx/error.log
-
-# Status serviços
-sudo systemctl status nginx
+### Backend (`server/.env`)
+```env
+POSTGRES_USER=allure_user
+POSTGRES_PASSWORD=SUA_SENHA_FORTE
+POSTGRES_DB=allure_events
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+JWT_SECRET=SUA_CHAVE_SECRETA_LONGA
+OPENAI_API_KEY=sk-proj-sua-chave-aqui
 ```
 
-### Debug Aplicação
-```bash
-# Console navegador (F12)
-# Logs Google Apps Script
-# Verificar network requests
-```
-
-## 🆘 Troubleshooting
-
-### Problemas Comuns
-
-| Problema | Solução |
-|----------|---------|
-| 🚫 CORS Error | Verificar `doOptions()` no Apps Script |
-| 📊 Dados não salvam | Verificar SHEET_ID e permissões |
-| 🌐 Site não carrega | Verificar Nginx e permissões |
-| 🔒 SSL Error | Executar `sudo certbot renew` |
-| 📱 Layout quebrado | Verificar build e assets |
-
-### Comandos de Diagnóstico
-```bash
-# Verificar configuração
-sudo nginx -t
-systemctl status nginx
-
-# Testar conectividade  
-curl -I https://seu-site.com
-ping seu-site.com
-
-# Verificar logs
-journalctl -u nginx
+### Docker (`.env` na raiz)
+```env
+POSTGRES_USER=allure_user
+POSTGRES_PASSWORD=SUA_SENHA_FORTE
+POSTGRES_DB=allure_events
+OPENAI_API_KEY=sk-proj-sua-chave-aqui
 ```
 
 ## 🤝 Contribuindo
 
-### Fluxo de Desenvolvimento
-1. **Fork** o repositório
-2. **Clone** localmente
-3. **Crie branch**: `git checkout -b feature/nova-funcionalidade`
-4. **Desenvolva** e teste
-5. **Commit**: `git commit -m "feat: nova funcionalidade"`
-6. **Push**: `git push origin feature/nova-funcionalidade`  
-7. **PR** no GitHub
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Add: nova feature'`)
+4. Push (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
 
-### Padrões do Código
-- ✅ **TypeScript** obrigatório
-- ✅ **ESLint** configurado
-- ✅ **Componentes funcionais**
-- ✅ **Hooks personalizados**
-- ✅ **Documentação inline**
+## 📄 Licença
 
-## 📞 Suporte Técnico
-
-### Canais de Ajuda
-- 📖 **Documentação**: Arquivos `/docs` 
-- 🐛 **Issues**: GitHub Issues
-- 💬 **Discussões**: GitHub Discussions
-- 📧 **Email**: admin@allure-events.com
-
-### Informações do Servidor
-- 🌐 **IP**: 31.97.40.181
-- 🔧 **Acesso SSH**: `ssh root@31.97.40.181`
-- 📂 **Pasta Web**: `/var/www/allure-events`
+Código aberto. Use livremente, mas não nos responsabilizamos por custos da OpenAI API ou perda de dados.
 
 ---
 
-## 📄 Licença e Propriedade
-
-**© 2025 Allure Music Hall**  
-Sistema proprietário de administração de eventos.
-
-**Versão**: 2.0.0 | **Última atualização**: 25/09/2025
-
----
-
-🎵 **Desenvolvido com ❤️ para o Allure Music Hall**
+**Desenvolvido com ❤️ usando React, Node.js, PostgreSQL e OpenAI GPT-4**

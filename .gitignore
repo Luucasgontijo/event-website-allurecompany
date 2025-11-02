@@ -77,3 +77,27 @@ backup/
 # Cache
 .cache/
 .parcel-cache/
+
+# Server específico
+server/node_modules/
+server/dist/
+server/.env
+server/.env.local
+server/.env.*.local
+server/.migrated
+
+# Docker
+docker-compose.override.yml
+postgres_data/
+.env.docker.local
+
+# Chaves e credenciais
+*.key
+*.pem
+*.p12
+.secrets/
+
+# Backups de banco de dados
+*.sql
+*.dump
+backup*.sql

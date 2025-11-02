@@ -1,22 +1,3 @@
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'manager';
-}
-
-export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
 export interface Ticket {
   id: string;
   nome: string;
@@ -25,10 +6,10 @@ export interface Ticket {
 }
 
 export interface IngressosStructure {
-  'setores_mesa'?: Ticket[];
-  'camarotes_premium'?: Ticket[];
-  'camarotes_empresariais'?: Ticket[];
-  [key: string]: Ticket[] | undefined; // Para categorias personalizadas
+  setores_mesa?: Ticket[];
+  camarotes_premium?: Ticket[];
+  camarotes_empresariais?: Ticket[];
+  [key: string]: Ticket[] | undefined;
 }
 
 export interface Event {
@@ -50,7 +31,7 @@ export interface Event {
   ativo?: boolean;
 }
 
-export interface EventFormData {
+export interface CreateEventDTO {
   nome: string;
   artista: string;
   data: string;
@@ -62,9 +43,12 @@ export interface EventFormData {
   endereco?: string;
   descricao?: string;
   ingressos: IngressosStructure;
+  usuario?: string;
 }
 
-export type EventStatus = 'disponivel' | 'esgotado' | 'cancelado' | 'personalizado';
+export interface UpdateEventDTO extends Partial<CreateEventDTO> {
+  id: number;
+}
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -73,9 +57,3 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Não precisamos mais do GoogleSheetsResponse
-// export interface GoogleSheetsResponse {
-//   success: boolean;
-//   message?: string;
-//   data?: any;
-// }
