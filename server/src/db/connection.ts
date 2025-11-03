@@ -18,14 +18,27 @@ export const pool = new Pool({
 });
 
 // Teste de conexão
-pool.on('connect', () => {
-  console.log('✅ Conectado ao PostgreSQL');
+pool.on('connect', (client) => {
+  console.log(`[POSTGRES] ✅ Nova conexão estabelecida com PostgreSQL`);
+  console.log(`[POSTGRES] Conexão ID: ${client.processID}`);
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Erro inesperado no PostgreSQL:', err);
+  console.error(`[POSTGRES] ❌ Erro inesperado no PostgreSQL:`, err);
+  console.error(`[POSTGRES] Detalhes:`, {
+    code: err.code,
+    message: err.message,
+    stack: err.stack
+  });
   process.exit(-1);
 });
+
+// Log de configuração ao inicializar
+console.log(`[POSTGRES] Configurando pool de conexões:`);
+console.log(`[POSTGRES] Host: ${process.env.POSTGRES_HOST || 'localhost'}`);
+console.log(`[POSTGRES] Port: ${process.env.POSTGRES_PORT || '5432'}`);
+console.log(`[POSTGRES] Database: ${process.env.POSTGRES_DB || 'allure_events'}`);
+console.log(`[POSTGRES] User: ${process.env.POSTGRES_USER || 'allure_user'}`);
 
 export default pool;
 

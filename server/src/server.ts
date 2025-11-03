@@ -20,13 +20,11 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Log de requisições em desenvolvimento
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-  });
-}
+// Log de requisições (sempre ativo)
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${req.ip}`);
+  next();
+});
 
 // Rotas
 app.use('/api', eventRoutes);
@@ -34,18 +32,27 @@ app.use('/api', aiRoutes);
 
 // Rota de health check
 app.get('/health', async (req, res) => {
+  console.log('[HEALTH] Health check iniciado');
+  const startTime = Date.now();
   try {
+    console.log('[HEALTH] Testando conexão com PostgreSQL...');
     await pool.query('SELECT 1');
+    const duration = Date.now() - startTime;
+    console.log(`[HEALTH] ✅ Sucesso - PostgreSQL conectado (${duration}ms)`);
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
-      database: 'connected'
+      database: 'connected',
+      responseTime: `${duration}ms`
     });
   } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`[HEALTH] ❌ Erro - Falha ao conectar PostgreSQL (${duration}ms):`, error);
     res.status(500).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       database: 'disconnected',
+      responseTime: `${duration}ms`,
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -94,6 +101,12 @@ app.listen(PORT, () => {
 ║   🌍 Environment: ${process.env.NODE_ENV || 'development'}        ║
 ╚════════════════════════════════════════╝
   `);
+  console.log(`[SERVER] Servidor Express iniciado com sucesso na porta ${PORT}`);
+  console.log(`[SERVER] POSTGRES_HOST: ${process.env.POSTGRES_HOST || 'localhost'}`);
+  console.log(`[SERVER] POSTGRES_PORT: ${process.env.POSTGRES_PORT || '5432'}`);
+  console.log(`[SERVER] POSTGRES_DB: ${process.env.POSTGRES_DB || 'allure_events'}`);
+  console.log(`[SERVER] POSTGRES_USER: ${process.env.POSTGRES_USER || 'allure_user'}`);
+  console.log(`[SERVER] Health check disponível em: http://localhost:${PORT}/health`);
 });
 
 // Graceful shutdown

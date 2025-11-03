@@ -1,21 +1,4 @@
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-allure_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
-      POSTGRES_DB: ${POSTGRES_DB:-allure_events}
-    volumes:
-      - allure_postgres_data:/var/lib/postgresql/data
-      - ./server/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    networks:
-      - legacy-server
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-
   # Backend API
   backend:
     image: allure-events-backend:latest
@@ -23,8 +6,8 @@ services:
       context: ./server
       dockerfile: Dockerfile
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-allure_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-23d64722c2a32e72a430677238e08a82}
       POSTGRES_DB: ${POSTGRES_DB:-allure_events}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -48,6 +31,9 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+      update_config:
+        failure_action: rollback
+        delay: 10s
 
   # Frontend
   frontend:
@@ -78,9 +64,4 @@ networks:
   legacy-server:
     external: true
     name: legacy-server
-
-volumes:
-  allure_postgres_data:
-    external: true
-    name: allure_postgres_data
 
