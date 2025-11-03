@@ -18,17 +18,16 @@ export const pool = new Pool({
 });
 
 // Teste de conexão
-pool.on('connect', (client) => {
+pool.on('connect', () => {
   console.log(`[POSTGRES] ✅ Nova conexão estabelecida com PostgreSQL`);
-  console.log(`[POSTGRES] Conexão ID: ${client.processID}`);
 });
 
-pool.on('error', (err) => {
+pool.on('error', (err: any) => {
   console.error(`[POSTGRES] ❌ Erro inesperado no PostgreSQL:`, err);
   console.error(`[POSTGRES] Detalhes:`, {
-    code: err.code,
-    message: err.message,
-    stack: err.stack
+    code: err.code || 'UNKNOWN',
+    message: err.message || 'Unknown error',
+    stack: err.stack || 'No stack trace'
   });
   process.exit(-1);
 });
