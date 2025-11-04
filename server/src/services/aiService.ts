@@ -5,6 +5,44 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
 
+const PLACEHOLDER_TOKENS = ['your-api-key-here', 'sua_chave_aqui'];
+
+const ensureApiKeyIsValid = () => {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY não configurada');
+  }
+
+  const isPlaceholder = PLACEHOLDER_TOKENS.some((token) =>
+    apiKey.toLowerCase().includes(token)
+  );
+
+  if (isPlaceholder) {
+    throw new Error('OPENAI_API_KEY inválida ou placeholder. Atualize sua variável de ambiente.');
+  }
+};
+
+const normalizeJsonResponse = (content: string) => {
+  let jsonString = content.trim();
+
+  if (jsonString.startsWith('```json')) {
+    jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+  } else if (jsonString.startsWith('```')) {
+    jsonString = jsonString.replace(/```\n?/g, '');
+  }
+
+  try {
+    return JSON.parse(jsonString);
+  } catch (parseError) {
+    console.error('[AI] Falha ao converter resposta em JSON:', {
+      contentPreview: jsonString.slice(0, 200),
+      error: parseError instanceof Error ? parseError.message : parseError,
+    });
+    throw new Error('Não foi possível interpretar a resposta da IA.');
+  }
+};
+
 export interface ExtractedEventData {
   nome?: string;
   local?: string;
@@ -26,9 +64,7 @@ export interface ExtractedEventData {
 export class AIService {
   // Extrair informações de uma imagem
   async extractFromImage(imageBase64: string): Promise<ExtractedEventData> {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY não configurada');
-    }
+    ensureApiKeyIsValid();
 
     try {
       const response = await openai.chat.completions.create({
@@ -82,31 +118,29 @@ Para horários, use formato 24h (HH:mm).`
         ],
         max_tokens: 1000,
         temperature: 0.3,
+        response_format: { type: 'json_object' },
       });
 
       const content = response.choices[0]?.message?.content || '{}';
-      
-      // Limpar possível markdown
-      let jsonString = content.trim();
-      if (jsonString.startsWith('```json')) {
-        jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      } else if (jsonString.startsWith('```')) {
-        jsonString = jsonString.replace(/```\n?/g, '');
-      }
-      
-      const extractedData: ExtractedEventData = JSON.parse(jsonString);
+      const extractedData: ExtractedEventData = normalizeJsonResponse(content);
       return extractedData;
     } catch (error) {
       console.error('Erro ao processar imagem com IA:', error);
+
+      if (error && typeof error === 'object') {
+        const apiError = (error as any).error;
+        if (apiError?.message) {
+          throw new Error(`Falha ao processar imagem com IA: ${apiError.message}`);
+        }
+      }
+
       throw new Error('Falha ao processar imagem com IA');
     }
   }
 
   // Extrair informações de um texto
   async extractFromText(text: string): Promise<ExtractedEventData> {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY não configurada');
-    }
+    ensureApiKeyIsValid();
 
     try {
       const response = await openai.chat.completions.create({
@@ -153,22 +187,22 @@ Para horários, use formato 24h (HH:mm).`
         ],
         max_tokens: 1000,
         temperature: 0.3,
+        response_format: { type: 'json_object' },
       });
 
       const content = response.choices[0]?.message?.content || '{}';
-      
-      // Limpar possível markdown
-      let jsonString = content.trim();
-      if (jsonString.startsWith('```json')) {
-        jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      } else if (jsonString.startsWith('```')) {
-        jsonString = jsonString.replace(/```\n?/g, '');
-      }
-      
-      const extractedData: ExtractedEventData = JSON.parse(jsonString);
+      const extractedData: ExtractedEventData = normalizeJsonResponse(content);
       return extractedData;
     } catch (error) {
       console.error('Erro ao processar texto com IA:', error);
+
+      if (error && typeof error === 'object') {
+        const apiError = (error as any).error;
+        if (apiError?.message) {
+          throw new Error(`Falha ao processar texto com IA: ${apiError.message}`);
+        }
+      }
+
       throw new Error('Falha ao processar texto com IA');
     }
   }
