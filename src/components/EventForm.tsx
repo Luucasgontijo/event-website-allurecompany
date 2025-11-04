@@ -246,13 +246,29 @@ export default function EventForm({
       .replace(/^_|_$/g, '');
   };
 
+  const mapCategoryKey = (raw: string | undefined | null) => {
+    if (!raw) return DEFAULT_TICKET_CATEGORY_KEYS[0];
+
+    const normalized = normalizeCategoryKey(raw);
+    if (!normalized) return DEFAULT_TICKET_CATEGORY_KEYS[0];
+
+    if (normalized.includes('empres')) {
+      return DEFAULT_TICKET_CATEGORY_KEYS[2];
+    }
+    if (normalized.includes('premium') || normalized.includes('vip') || normalized.includes('camarote')) {
+      return DEFAULT_TICKET_CATEGORY_KEYS[1];
+    }
+    if (normalized.includes('mesa') || normalized.includes('table')) {
+      return DEFAULT_TICKET_CATEGORY_KEYS[0];
+    }
+
+    return normalized;
+  };
+
   const detectCategoryFromTicket = (ticket: any): string => {
     const explicitCategory = ticket?.categoria || ticket?.categoriaIngressos || ticket?.category;
     if (explicitCategory) {
-      const normalized = normalizeCategoryKey(String(explicitCategory));
-      if (normalized) {
-        return normalized;
-      }
+      return mapCategoryKey(String(explicitCategory));
     }
 
     const referenceText = `${ticket?.nome || ''} ${ticket?.descricao || ''}`.toLowerCase();
@@ -343,7 +359,7 @@ export default function EventForm({
       const handleTicketList = (tickets: any[], defaultCategory?: string) => {
         tickets.forEach((ticketData, index) => {
           const detectedCategory = detectCategoryFromTicket(ticketData);
-          const categoryKey = defaultCategory || detectedCategory;
+          const categoryKey = defaultCategory ? mapCategoryKey(defaultCategory) : detectedCategory;
           if (!isDefaultCategoryKey(categoryKey)) {
             detectedCustomCategories.add(categoryKey);
           }
@@ -355,8 +371,7 @@ export default function EventForm({
         handleTicketList(aiData.ingressos);
       } else if (typeof aiData.ingressos === 'object') {
         Object.entries(aiData.ingressos).forEach(([categoriaBruta, tickets]) => {
-          const normalizedCategory = normalizeCategoryKey(categoriaBruta);
-          const targetCategory = normalizedCategory || DEFAULT_TICKET_CATEGORY_KEYS[0];
+          const targetCategory = mapCategoryKey(categoriaBruta);
 
           if (Array.isArray(tickets)) {
             handleTicketList(tickets, targetCategory);
