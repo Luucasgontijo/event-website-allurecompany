@@ -14,10 +14,17 @@ interface EventFormProps {
 
 const DEFAULT_ADDRESS = 'Rodovia Arquiteto Helder Cândia, nº 2044 - Ribeirão do Lipa - Cuiabá- MT / Buffet Leila Malouf LTDA';
 
+const DEFAULT_TICKET_CATEGORY_KEYS = ['setores_mesa', 'camarotes_premium', 'camarotes_empresariais'] as const;
+
+const isDefaultCategoryKey = (
+  value: string
+): value is (typeof DEFAULT_TICKET_CATEGORY_KEYS)[number] =>
+  DEFAULT_TICKET_CATEGORY_KEYS.includes(value as (typeof DEFAULT_TICKET_CATEGORY_KEYS)[number]);
+
 const TICKET_CATEGORIES = [
-  { key: 'setores_mesa', label: 'Setores de Mesa' },
-  { key: 'camarotes_premium', label: 'Camarotes Premium' },
-  { key: 'camarotes_empresariais', label: 'Camarotes Empresariais' },
+  { key: DEFAULT_TICKET_CATEGORY_KEYS[0], label: 'Setores de Mesa' },
+  { key: DEFAULT_TICKET_CATEGORY_KEYS[1], label: 'Camarotes Premium' },
+  { key: DEFAULT_TICKET_CATEGORY_KEYS[2], label: 'Camarotes Empresariais' },
 ];
 
 const EVENT_STATUSES = [
@@ -105,9 +112,8 @@ export default function EventForm({
       setShowCustomStatus(initialData.status === 'personalizado');
 
       // Identificar categorias personalizadas
-      const defaultKeys = ['setores_mesa', 'camarotes_premium', 'camarotes_empresariais'];
       const customKeys = Object.keys(initialData.ingressos || {}).filter(
-        key => !defaultKeys.includes(key)
+        key => !isDefaultCategoryKey(key)
       );
       setCustomCategories(customKeys);
     } else if (!isEditing) {
@@ -231,6 +237,54 @@ export default function EventForm({
   };
 
   // Função para preencher formulário com dados da IA
+  const normalizeCategoryKey = (value: string) => {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
+  };
+
+  const detectCategoryFromTicket = (ticket: any): string => {
+    const explicitCategory = ticket?.categoria || ticket?.categoriaIngressos || ticket?.category;
+    if (explicitCategory) {
+      const normalized = normalizeCategoryKey(String(explicitCategory));
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    const referenceText = `${ticket?.nome || ''} ${ticket?.descricao || ''}`.toLowerCase();
+
+    if (referenceText.includes('empres')) {
+      return DEFAULT_TICKET_CATEGORY_KEYS[2];
+    }
+    if (referenceText.includes('premium') || referenceText.includes('vip') || referenceText.includes('camarote')) {
+      return DEFAULT_TICKET_CATEGORY_KEYS[1];
+    }
+    if (referenceText.includes('mesa') || referenceText.includes('table')) {
+      return DEFAULT_TICKET_CATEGORY_KEYS[0];
+    }
+
+    return DEFAULT_TICKET_CATEGORY_KEYS[0];
+  };
+
+  const parsePrice = (value: any): number => {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const sanitized = value
+        .replace(/[^0-9,.-]/g, '')
+        .replace(/,(?=\d{3}(?:\D|$))/g, '')
+        .replace(',', '.');
+      const parsed = parseFloat(sanitized);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
   const handleAIExtract = (aiData: any) => {
     console.log('Dados extraídos pela IA:', aiData);
 
@@ -260,26 +314,64 @@ export default function EventForm({
 
     // Preencher ingressos se houver
     if (aiData.ingressos) {
-      const newIngressos: IngressosStructure = {
+      const normalizedIngressos: IngressosStructure = {
         setores_mesa: [],
         camarotes_premium: [],
         camarotes_empresariais: [],
       };
 
-      // Processar cada categoria
-      Object.keys(aiData.ingressos).forEach((categoria) => {
-        const tickets = aiData.ingressos[categoria];
-        if (Array.isArray(tickets) && tickets.length > 0) {
-          newIngressos[categoria] = tickets.map((ticket: any, index: number) => ({
-            id: `ai-${Date.now()}-${index}`,
-            nome: ticket.nome || '',
-            preco: parseFloat(ticket.preco) || 0,
-            descricao: ticket.descricao || '',
-          }));
-        }
-      });
+      const detectedCustomCategories = new Set<string>();
 
-      setIngressos(newIngressos);
+      const pushTicketToCategory = (categoryKey: string, ticketData: any, index: number) => {
+        if (!normalizedIngressos[categoryKey]) {
+          normalizedIngressos[categoryKey] = [];
+        }
+
+        const ticket: Ticket = {
+          id: ticketData.id ? String(ticketData.id) : `ai-${Date.now()}-${categoryKey}-${index}`,
+          nome: ticketData.nome || ticketData.nomeIngresso || '',
+          preco: parsePrice(ticketData.preco),
+          descricao: ticketData.descricao || ticketData.detalhes || '',
+        };
+
+        normalizedIngressos[categoryKey] = [
+          ...(normalizedIngressos[categoryKey] || []),
+          ticket,
+        ];
+      };
+
+      const handleTicketList = (tickets: any[], defaultCategory?: string) => {
+        tickets.forEach((ticketData, index) => {
+          const detectedCategory = detectCategoryFromTicket(ticketData);
+          const categoryKey = defaultCategory || detectedCategory;
+          if (!isDefaultCategoryKey(categoryKey)) {
+            detectedCustomCategories.add(categoryKey);
+          }
+          pushTicketToCategory(categoryKey, ticketData, index);
+        });
+      };
+
+      if (Array.isArray(aiData.ingressos)) {
+        handleTicketList(aiData.ingressos);
+      } else if (typeof aiData.ingressos === 'object') {
+        Object.entries(aiData.ingressos).forEach(([categoriaBruta, tickets]) => {
+          const normalizedCategory = normalizeCategoryKey(categoriaBruta);
+          const targetCategory = normalizedCategory || DEFAULT_TICKET_CATEGORY_KEYS[0];
+
+          if (Array.isArray(tickets)) {
+            handleTicketList(tickets, targetCategory);
+          } else if (tickets && typeof tickets === 'object') {
+            handleTicketList([tickets], targetCategory);
+          }
+
+          if (!isDefaultCategoryKey(targetCategory)) {
+            detectedCustomCategories.add(targetCategory);
+          }
+        });
+      }
+
+      setIngressos(normalizedIngressos);
+      setCustomCategories(Array.from(detectedCustomCategories));
     }
 
     // Mostrar notificação de sucesso
